@@ -1,0 +1,52 @@
+{
+    "variables": {
+        "aws_access_key": "AKIATX52IRKKMN5L72QE",
+        "aws_secret_key": "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",
+        "ami_name": "tomcat-ami",
+        "aws_region": "ap-southeast-1",
+        "ssh_username": "ec2-user",
+        "vpc_id": "vpc-332cc855",
+        "subnet_id": "subnet-a808f1e0"
+    },
+    "builders": [{
+        "type": "amazon-ebs",
+        "access_key": "{{user `aws_access_key`}}",
+        "secret_key": "{{user `aws_secret_key`}}",
+        "region": "{{user `aws_region`}}",
+        "instance_type": "t2.micro",
+        "force_deregister": "true",
+        "ssh_username": "{{user `ssh_username`}}",
+        "communicator": "ssh",
+        "associate_public_ip_address": true,
+        "subnet_id": "{{user `subnet_id`}}",
+        "ami_name": "{{user `ami_name`}}",
+	"source_ami_filter": {
+	  "filters": {
+		"virtualization-type": "hvm",
+		"name": "ansible-packer-test",
+		"root-device-type": "ebs"
+	  },
+	    "most_recent": true,
+            "owners": ["257551796884"]
+        },
+        "run_tags": {
+            "Name": "packer-build-image"
+        }
+    }],
+    "provisioners": [{
+            "type": "shell",
+            "inline": "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done"
+        },
+        {
+            "type": "shell",
+            "script": "/home/vinayak/projects/packer-ansible-aws/packer/provisioners/scripts/bootstrap.sh"
+        },
+        {
+            "type": "ansible",
+            "playbook_file": "/home/vinayak/projects/packer-ansible-aws/packer/provisioners/ansible/setup-server.yml"
+        },
+        {
+            "type": "ansible",
+            "playbook_file": "/home/vinayak/projects/packer-ansible-aws/packer/provisioners/ansible/deploy_app.yml"
+        }]
+}
